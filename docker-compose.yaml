@@ -1,0 +1,40 @@
+volumes:
+  db:
+    driver: local
+  minio-data:
+    driver: local
+
+services:
+  file_sharing_service:
+    image: 'postgres:latest'
+    restart: always
+    env_file:
+      - .env
+    container_name: 'postgres-db'
+    environment:
+      - 'POSTGRES_DB=${POSTGRES_DATABASE:-postgres}'
+      - 'POSTGRES_PASSWORD=${POSTGRES_PASSWORD:-postgres}'
+    volumes:
+      - db:/var/lib/postgresql/data
+    ports:
+      # Порт для серверного приложения и для контейнера с базой данных.
+      - '${DATABASE_PORT:-5432}:5432'
+
+  minio:
+    image: 'minio/minio:latest'
+    restart: always
+    env_file:
+      - .env
+    container_name: 'minio'
+    environment:
+      - 'MINIO_ROOT_USER=${MINIO_ACCESS_KEY:-minioadmin}'
+      - 'MINIO_ROOT_PASSWORD=${MINIO_SECRET_KEY:-minioadmin}'
+    ports:
+    # Minio Server
+      - '9000:9000'
+    # Minio Console -> Панель управления администратора объектного хранилища
+      - '9001:9001'
+    volumes:
+      - minio-data:/data
+    # Выполнится сразу после запуска контейнера
+    command: server /data --console-address ":9001"
