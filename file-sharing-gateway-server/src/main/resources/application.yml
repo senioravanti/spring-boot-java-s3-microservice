@@ -1,0 +1,13 @@
+spring:
+  application:
+    name: file-sharing-gateway-server
+
+  profiles:
+    active: ${PROFILE}
+
+  config:
+    import: 'configserver:'
+
+  cloud:
+    config:
+      uri: ${CONFIG_SERVER_URI}

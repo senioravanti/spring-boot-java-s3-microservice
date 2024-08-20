@@ -1,0 +1,184 @@
+# docker-compose down && docker-compose up -d
+# mvn clean package
+name: filesharingservice
+
+volumes:
+  db:
+    driver: local
+  minio-data:
+    driver: local
+
+services:
+  # Всю конфигурацию для сервисов надо передавать через переменные среды окружения в файле .env определены открытые перменные, которые можно использовать для интерполяции во время выполнения команды docker-compose up, а в файле postgres-secrets.env -> определены секретные переменные среды, которые нельзя использовать для интерполяции. 
+  database:
+    image: 'postgres:latest'
+    restart: always
+    # Содержит определения секретных перменных среды POSTGRES_DB и POSTGRES_PASSWORD (обязательная переменная)
+    env_file:
+      - path: "postgres-secrets.env"
+        required: true
+    
+    container_name: "file-sharing-database"
+    volumes:
+      - db:/var/lib/postgresql/data
+    
+    ports:
+      # Порт для серверного приложения и для контейнера с базой данных.
+      # Переменная объявлена в .env файле
+      - "${DATABASE_PORT}:5432"
+    
+    networks:
+      backend:
+        aliases:
+          - "database"
+
+
+  minio:
+    image: 'minio/minio:latest'
+    restart: always
+    env_file:
+    # Содержит определения обязательных секретных перменных среды MINIO_ROOT_USER и MINIO_ROOT_PASSWORD -> логин и пароль администратора
+      - path: "minio-server-secrets.env"
+        required: true
+    
+    container_name: "file-sharing-minio-server"
+    
+    ports:
+    # Minio Server
+      - "${MINIO_SERVER_PORT}:${MINIO_SERVER_PORT}"
+    # Minio Console -> Панель управления администратора объектного хранилища
+      - "9001:9001"
+    volumes:
+      - "minio-data:/data"
+    # Выполнится сразу после запуска контейнера
+    command: server /data --console-address ":9001"
+    
+    networks:
+      backend:
+        aliases:
+          - "${MINIO_SERVER_HOST}"
+
+  # Мои сервисы
+  # VVV
+  configserver:
+    image: 'filesharingservice/configserver:0.0.1-SNAPSHOT'
+    restart: unless-stopped
+
+    container_name: "file-sharing-config-sever"
+    # Для файла application.yml нужна перменная среды CONFIG_SERVER_PORT
+
+    environment:
+      CONFIG_SERVER_PORT: "${CONFIG_SERVER_PORT}"
+
+    ports:
+      - "${CONFIG_SERVER_PORT}:${CONFIG_SERVER_PORT}"
+
+    networks:
+      backend:
+        aliases:
+          - "${CONFIG_SERVER_HOST}"
+
+
+  s3:
+    image: 'filesharingservice/s3:0.0.1-SNAPSHOT'
+    restart: unless-stopped
+    env_file:
+      - path: "minio-service-secrets.env"
+        required: true
+
+    container_name: "file-sharing-s3-service"
+
+    depends_on:
+      minio:
+        condition: service_started
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+
+    environment:
+      PROFILE: "default"
+      CONFIG_SERVER_URI: "http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}"
+    
+      EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
+    
+      S3_SERVICE_PORT: "${S3_SERVICE_PORT}"
+      SERVER_PATH: "/api"
+
+      MINIO_URI: "http://${MINIO_SERVER_HOST}:${MINIO_SERVER_PORT}"
+
+      MINIO_REGION: "${MINIO_REGION}"
+      MINIO_BUCKET: "${MINIO_BUCKET}"
+
+      MAX_FILE_SIZE: "20MB"
+      MAX_REQUEST_SIZE: "20MB"
+
+      SWAGGER_UI_PATH: "/documentation"
+
+    ports:
+      - "${S3_SERVICE_PORT}:${S3_SERVICE_PORT}"
+
+    networks:
+      - backend
+
+  # VVV
+  eurekaserver:
+    image: 'filesharingservice/eurekaserver:0.0.1-SNAPSHOT'
+    restart: unless-stopped
+
+    container_name: "file-sharing-eureka-server"
+
+    depends_on:
+      configserver:
+        condition: service_started  
+
+    environment:
+      PROFILE: "default"
+      CONFIG_SERVER_URI: "http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}"
+
+      EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
+      EUREKA_SERVER_PORT: "${EUREKA_SERVER_PORT}"
+
+    ports:
+      - "${EUREKA_SERVER_PORT}:${EUREKA_SERVER_PORT}"
+
+    networks:
+      backend:
+        aliases:
+          - "${EUREKA_SERVER_HOST}"
+
+
+  gatewayserver:
+    image: 'filesharingservice/gatewayserver:0.0.1-SNAPSHOT'
+    restart: unless-stopped
+
+    container_name: "file-sharing-gateway-server"
+
+    environment:
+      PROFILE: "default"
+      CONFIG_SERVER_URI: "http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}"
+
+      EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
+
+      GATEWAY_SERVER_PORT: "${GATEWAY_SERVER_PORT}"
+
+    depends_on:
+      configserver:
+        condition: service_started
+      eurekaserver:
+        condition: service_started
+
+    ports:
+      - "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}"
+
+    networks:
+      backend:
+        aliases:
+          - "${GATEWAY_SERVER_HOST}"
+
+
+
+networks:
+  backend:
+  # bridge -> обеспечивает подключение контейнера к сети хоста
+    driver: bridge

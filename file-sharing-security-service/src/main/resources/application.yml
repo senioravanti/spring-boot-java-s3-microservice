@@ -1,0 +1,32 @@
+spring:
+
+  application:
+    name: 'filesharingservice'
+
+  datasource:
+    url: 'jdbc:postgresql://${APP_HOST:localhost}:${DATABASE_PORT:5432}/${POSTGRES_DATABASE:postgres}'
+    username: ${POSTGRES_USERNAME:postgres}
+    password: ${POSTGRES_PASSWORD:postgres}
+
+  jpa:
+    hibernate:
+      ddl-auto: none
+    database-platform: org.hibernate.dialect.PostgreSQLDialect
+
+  liquibase:
+    change-log: 'classpath:db/changelog/changelog-main.yaml'
+
+server:
+  port: ${APP_PORT:8080}
+
+logging:
+  level:
+    ru.manannikov.filesharingservice.securityservice: DEBUG
+
+app:
+  security:
+    jwt:
+      key: ${JWT_SECRET_KEY}
+      algorithm: HS256
+      issuer: 'http://${APP_HOST:localhost}:${APP_PORT:8080}'
+      expiration-time: 60m
