@@ -6,7 +6,10 @@ import io.swagger.v3.oas.annotations.media.Schema;
 public record LoginResponse(
     @Schema(description = "Данные авторизированного пользователя")
     UserDto user,
-    @Schema(description = "Токен доступа", example = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTYyMjUwNj...")
-    String token
+
+    @Schema(description = "Токен доступа к защищенному ресурсу с ограниченным сроком действия", example = "eyJhbGciOiJIUzUxMiJ9.eyJzdWIiOiJhZG1pbiIsImV4cCI6MTYyMjUwNj...")
+    String accessToken,
+    @Schema(description = "Токен обновления, передают сервису авторизации для повторной выдачи токена доступа после истечения срока действия токена доступа")
+    String refreshToken
 ) {
 }

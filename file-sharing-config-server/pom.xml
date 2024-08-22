@@ -10,10 +10,10 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>ru.manannikov</groupId>
+	<groupId>ru.manannikov.filesharingservice</groupId>
 	<artifactId>configserver</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>configserver</name>
+	<name>Configuration Server</name>
 	<description>Репозиторий конфигурации сервисов filesharingservice</description>
 	<url/>
 	<licenses>

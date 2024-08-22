@@ -11,11 +11,13 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>ru.manannikov</groupId>
-	<artifactId>security-service</artifactId>
+	<groupId>ru.manannikov.filesharingservice</groupId>
+	<artifactId>securityservice</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
-	<name>security-service</name>
-	<description>Demo project for Spring Boot</description>
+
+	<name>Security Service</name>
+	<description>Сервис аутентификации пользователей filesharingservice</description>
+
 	<url/>
 	<licenses>
 		<license/>
@@ -37,6 +39,11 @@
 		<postgres.version>42.7.3</postgres.version>
 		<swagger.version>2.6.0</swagger.version>
 		<spring-cloud.version>2023.0.3</spring-cloud.version>
+
+		<jjwt.version>0.12.6</jjwt.version>
+
+		<dockerfile-maven.version>1.4.13</dockerfile-maven.version>
+		<docker.image.prefix>filesharingservice</docker.image.prefix>
 	</properties>
 
 	<dependencies>
@@ -71,9 +78,29 @@
 			<artifactId>spring-security-test</artifactId>
 			<scope>test</scope>
 		</dependency>
+<!--	Jwt token	-->
+<!--		<dependency>-->
+<!--			<groupId>org.springframework.boot</groupId>-->
+<!--			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>-->
+<!--		</dependency>-->
 		<dependency>
-			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-oauth2-resource-server</artifactId>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-api</artifactId>
+			<version>${jjwt.version}</version>
+		</dependency>
+
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-impl</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
+		</dependency>
+
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt-jackson</artifactId>
+			<version>${jjwt.version}</version>
+			<scope>runtime</scope>
 		</dependency>
 <!--	Swagger	-->
 		<dependency>
@@ -84,7 +111,8 @@
 <!--	Spring	-->
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-starter-web</artifactId>
+			<artifactId>spring-boot-configuration-processor</artifactId>
+			<optional>true</optional>
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
@@ -112,8 +140,19 @@
 <!--    Spring Cloud-->
 		<dependency>
 			<groupId>org.springframework.cloud</groupId>
-			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+			<artifactId>spring-cloud-starter-config</artifactId>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.cloud</groupId>
+			<artifactId>spring-cloud-starter-netflix-eureka-client</artifactId>
+				<exclusions>
+					<exclusion>
+						<groupId>org.springframework.cloud</groupId>
+						<artifactId>spring-cloud-starter-ribbon</artifactId>
+					</exclusion>
+				</exclusions>
+		</dependency>
+
 	</dependencies>
 
 	<dependencyManagement>
@@ -146,6 +185,34 @@
 							true
 						</enabled>
 					</layers>
+				</configuration>
+			</plugin>
+<!--		docker плагин, используется для автоматической генерации образа при сборке приложения 	-->
+			<plugin>
+				<groupId>com.spotify</groupId>
+				<artifactId>dockerfile-maven-plugin</artifactId>
+				<version>${dockerfile-maven.version}</version>
+				<executions>
+					<execution>
+						<id>default</id>
+						<goals>
+							<goal>build</goal>
+							<!--							<goal>push</goal>-->
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+
+					<repository>${docker.image.prefix}/${project.artifactId}</repository>
+					<!--				Указываем версию проекта -->
+					<tag>${project.version}</tag>
+
+					<buildArgs>
+						<!--					артифакт-версия, JAR_FILE -> переменная, которую плагин передаст команде docker build -build-arg name=value в виде пары ключ-значение	-->
+						<JAR_FILE>
+							target/${project.build.finalName}.jar
+						</JAR_FILE>
+					</buildArgs>
 				</configuration>
 			</plugin>
 		</plugins>

@@ -32,7 +32,7 @@ public class AuthService {
         return repository.save(user);
     }
     /**
-     * <p>Выполняет аутентификацию пользователя, генерирует json web token; <p/>
+     * <p>Выполняет аутентификацию пользователя, генерирует json web accessToken; <p/>
      * <p>AuthenticationManager будет искать пользователя в БД по email, если не найдет, то выбросит исключение, производное от AuthenticationException.<p/>
      * <p>Объект auth содержит:
        <ul>
@@ -47,18 +47,34 @@ public class AuthService {
      */
     public LoginResponse login(String email, String password) {
 
-        Authentication auth = authenticationManager.authenticate(
+        // Выбросит исключение, если пользователь передаст некорректный пароль
+        authenticationManager.authenticate(
             // DaoAuthenticationProvider поддерживает только аутентификацию с использованием UsernamePasswordAuthenticationToken.
             new UsernamePasswordAuthenticationToken(email, password)
         );
 
-        String jwt = service.generateJwt(auth);
-        // Гарантируем, что пользователь с таким email зарегистрирован
+        final UserEntity user = repository.findByUsername(email).get();
+        final Long id = user.getId();
+        final String username = user.getUsername();
+
         return new LoginResponse(
-            UserDto.fromEntity(
-                repository.findByUsername(email).get()
-            ),
-            jwt
+            UserDto.fromEntity(user),
+            service.generateAccessToken(id, username, user.getRole()),
+            service.generateRefreshToken(id, username)
+        );
+    }
+
+    public LoginResponse refresh(
+        final String refreshToken
+    ) {
+        final UserEntity user = service.getUserFromRefreshToken(refreshToken);
+        final Long id = user.getId();
+        final String username = user.getUsername();
+
+        return new LoginResponse(
+            UserDto.fromEntity(user),
+            service.generateAccessToken(id, username, user.getRole()),
+            service.generateRefreshToken(id, username)
         );
     }
 }

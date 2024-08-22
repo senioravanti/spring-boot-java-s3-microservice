@@ -10,7 +10,7 @@
 		<relativePath/> <!-- lookup parent from repository -->
 	</parent>
 
-	<groupId>ru.manannikov</groupId>
+	<groupId>ru.manannikov.filesharingservice</groupId>
 	<artifactId>s3</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>s3</name>

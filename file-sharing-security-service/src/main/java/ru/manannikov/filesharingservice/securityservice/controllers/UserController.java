@@ -3,6 +3,7 @@ package ru.manannikov.filesharingservice.securityservice.controllers;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -19,7 +20,8 @@ import ru.manannikov.filesharingservice.securityservice.services.UserService;
 import java.util.List;
 
 @RestController
-@RequestMapping("/users")
+@CrossOrigin("*")
+@RequestMapping("v1/users")
 @RequiredArgsConstructor
 @Tag(
     name = "UserController",
