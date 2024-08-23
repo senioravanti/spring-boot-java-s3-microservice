@@ -13,7 +13,6 @@ import ru.manannikov.filesharingservice.securityservice.dto.ExceptionBody;
 import ru.manannikov.filesharingservice.securityservice.exceptions.UserNotFoundException;
 
 import java.util.Arrays;
-import java.util.Map;
 
 import static org.springframework.http.HttpStatus.*;
 
@@ -48,19 +47,19 @@ public class CustomExceptionHandler {
      * @param ex -> AuthenticationException -> может выбросить DaoAuthenticationProvider, если не найдет пользователя с указанным email;
      * @return json формата ErrorDto сод. статус-код, детальное описание возникшей ошибки и моментом ее возникновения.
      */
-    @ExceptionHandler
-    @ResponseStatus(UNAUTHORIZED)
-    public ExceptionBody handleAuthenticationExceptions(final AuthenticationException ex) {
-        log.debug("see AuthenticationExceptions stack trace: {}", Arrays.toString(ex.getStackTrace()));
-        return new ExceptionBody("В ходе аутентификации произошла ошибка, в базе данных не найдено соответствие переданным регистрационным данным");
-    }
-
-    @ExceptionHandler
-    @ResponseStatus(FORBIDDEN)
-    public ExceptionBody handleAccessDeniedExceptions(final AccessDeniedException ex) {
-        log.debug("see AccessDeniedExceptions stack trace: {}", Arrays.toString(ex.getStackTrace()));
-        return new ExceptionBody("У вас нет полномочий для доступа к данному ресурсу");
-    }
+//    @ExceptionHandler
+//    @ResponseStatus(UNAUTHORIZED)
+//    public ExceptionBody handleAuthenticationExceptions(final AuthenticationException ex) {
+//        log.debug("see AuthenticationExceptions stack trace: {}", Arrays.toString(ex.getStackTrace()));
+//        return new ExceptionBody("В ходе аутентификации произошла ошибка, в базе данных не найдено соответствие переданным регистрационным данным");
+//    }
+//
+//    @ExceptionHandler
+//    @ResponseStatus(FORBIDDEN)
+//    public ExceptionBody handleAccessDeniedExceptions(final AccessDeniedException ex) {
+//        log.debug("see AccessDeniedExceptions stack trace: {}", Arrays.toString(ex.getStackTrace()));
+//        return new ExceptionBody("У вас нет полномочий для доступа к данному ресурсу");
+//    }
 
     @ExceptionHandler
     @ResponseStatus(INTERNAL_SERVER_ERROR)

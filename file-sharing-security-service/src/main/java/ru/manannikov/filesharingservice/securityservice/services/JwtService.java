@@ -111,22 +111,22 @@ public class JwtService {
         return userService.findById(id);
     }
 
-    public Authentication getAuthentication(
-        final String token
-    ) {
-        String username = Jwts
-            .parser()
-                .verifyWith(jwtProperties.getKey())
-            .build()
-            .parseSignedClaims(token)
-                .getPayload()
-            .getSubject()
-        ;
-        UserDetails user = userService.loadUserByUsername(username);
-        return new UsernamePasswordAuthenticationToken(
-            username,
-            user.getPassword(),
-            user.getAuthorities()
-        );
-    }
+//    public Authentication getAuthentication(
+//        final String token
+//    ) {
+//        String username = Jwts
+//            .parser()
+//                .verifyWith(jwtProperties.getKey())
+//            .build()
+//            .parseSignedClaims(token)
+//                .getPayload()
+//            .getSubject()
+//        ;
+//        UserDetails user = userService.loadUserByUsername(username);
+//        return new UsernamePasswordAuthenticationToken(
+//            username,
+//            user.getPassword(),
+//            user.getAuthorities()
+//        );
+//    }
 }

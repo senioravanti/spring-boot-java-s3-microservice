@@ -3,7 +3,6 @@ package ru.manannikov.filesharingservice.s3.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
-import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
@@ -60,7 +59,7 @@ public class ObjectController {
     }
 
 
-    @PostMapping(path = "/upload/{username}", consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
+    @PostMapping(path = {"{username}", "{username}/"}, consumes = {MediaType.MULTIPART_FORM_DATA_VALUE})
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Загрузить файл в объектное хранилище",
@@ -121,7 +120,7 @@ public class ObjectController {
     }
 
 
-    @PutMapping("/update/{username}/{objectName}")
+    @PutMapping("/{username}/{objectName}")
     @ResponseStatus(HttpStatus.CREATED)
     @Operation(
         summary = "Обновить содержимое файла",
@@ -175,7 +174,7 @@ public class ObjectController {
     }
 
 
-    @GetMapping("/download/{username}/{objectName}")
+    @GetMapping("/{username}/{objectName}")
     @ResponseStatus(HttpStatus.OK)
     @Operation(
         summary = "Загрузить содержимое файла из объектного хранилища",
@@ -240,7 +239,7 @@ public class ObjectController {
     }
 
 
-    @DeleteMapping("/delete/{username}/{objectName}")
+    @DeleteMapping("/{username}/{objectName}")
     @ResponseStatus(HttpStatus.OK)
     @Operation(
         summary = "Удалить объект",

@@ -64,6 +64,40 @@ services:
         aliases:
           - "${MINIO_SERVER_HOST}"
 
+
+  keycloak:
+    # Название собранного из Dockerfile, указанного в build, образа
+    image: 'filesharingservice/keycloak'
+    build:
+      context: ./keycloak
+    command: "start-dev"
+    restart: unless-stopped
+    
+    container_name: "file-sharing-keycloak"
+
+    depends_on:
+      database:
+        condition: service_healthy
+
+    env_file:
+      - path: "postgres-secrets.env"
+        required: true
+
+    environment:
+      KEYCLOAK_ADMIN: "admin"
+      KEYCLOAK_ADMIN_PASSWORD: "admin"
+      KC_HTTP_ENABLED: "true"
+      
+      KC_DB: "postgres"
+      KC_DB_URL: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${POSTGRES_DB}?useSSL=false
+
+    ports:
+      - "8080:8080"
+
+    networks:
+      backend:
+        aliases:
+          - "keycloak"
   # Мои сервисы
   # VVV
   configserver:
@@ -206,6 +240,7 @@ services:
 
       EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
 
+      POSTGRES_DB: "${POSTGRES_DB}"
       DATABASE_HOST: "${DATABASE_HOST}"
       DATABASE_PORT: "${DATABASE_PORT}"
 

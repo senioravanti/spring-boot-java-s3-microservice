@@ -4,7 +4,6 @@ package ru.manannikov.filesharingservice.securityservice.config;
 //import com.nimbusds.jose.jwk.OctetSequenceKey;
 import io.jsonwebtoken.security.Keys;
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.validator.constraints.time.DurationMin;

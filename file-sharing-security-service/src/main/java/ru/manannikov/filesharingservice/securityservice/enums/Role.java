@@ -13,12 +13,13 @@ import static ru.manannikov.filesharingservice.securityservice.enums.Permission.
 @RequiredArgsConstructor
 @Getter
 public enum Role {
-    USER(Collections.emptySet()),
+    USER(Set.of(
+        MANAGE_OBJECTS
+    )),
     ADMIN(Set.of(
-        ADMIN_CREATE,
-        ADMIN_READ,
-        ADMIN_UPDATE,
-        ADMIN_DELETE
+        MANAGE_OBJECTS,
+        MANAGE_BUCKETS,
+        MANAGE_USERS
     ))
     ;
 

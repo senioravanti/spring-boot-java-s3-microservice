@@ -23,14 +23,12 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 //import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 //import org.springframework.security.oauth2.server.resource.authentication.JwtGrantedAuthoritiesConverter;
 import org.springframework.security.web.SecurityFilterChain;
-import org.springframework.web.cors.CorsConfiguration;
-import org.springframework.web.cors.CorsConfigurationSource;
 import ru.manannikov.filesharingservice.securityservice.services.UserService;
 
-import static org.springframework.http.HttpMethod.*;
-
-import static ru.manannikov.filesharingservice.securityservice.enums.Role.*;
-import static ru.manannikov.filesharingservice.securityservice.enums.Permission.*;
+//import static org.springframework.http.HttpMethod.*;
+//
+//import static ru.manannikov.filesharingservice.securityservice.enums.Role.*;
+//import static ru.manannikov.filesharingservice.securityservice.enums.Permission.*;
 
 @Configuration
 @EnableWebSecurity
@@ -41,7 +39,7 @@ public class SecurityConfig {
      * WHILE_LIST_URL -> список роутов, доступных любым пользователям.
      */
     private static final String[] WHITE_LIST_URL = {
-        "/v1/auth/**", "/swagger-ui/**", "/configuration/ui", "/actuator/health",
+        "/v*/auth/**", "/swagger-ui/**", "/configuration/ui", "/actuator/health",
         "/configuration/security", "swagger-resources", "/swagger-resources/**", "/v3/api-docs", "/v3/api-docs/**", "/swagger-ui.html"
     };
     /**
@@ -108,8 +106,6 @@ public class SecurityConfig {
 //
 //                .requestMatchers(DELETE, "/users/**")
 //                    .hasAuthority(ADMIN_DELETE.getAuthority())
-
-                .anyRequest().authenticated()
             )
         ;
         // Настройка oauth2 resource server :: под сервером ресурсов понимают: API, к которому пользователь хочет получить доступ. Сервер, на котором хранятся защищенные ресурсы;

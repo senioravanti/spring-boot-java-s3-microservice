@@ -6,17 +6,13 @@ import org.springframework.security.core.GrantedAuthority;
 
 @RequiredArgsConstructor
 public enum Permission implements GrantedAuthority {
-    ADMIN_CREATE("admin:create"),
-    ADMIN_READ("admin:read"),
-    ADMIN_DELETE("admin:delete"),
-    ADMIN_UPDATE("admin:update")
+    MANAGE_OBJECTS,
+    MANAGE_BUCKETS,
+    MANAGE_USERS
     ;
-
-    private final String permission;
-
 
     @Override
     public String getAuthority() {
-        return permission;
+        return toString();
     }
 }

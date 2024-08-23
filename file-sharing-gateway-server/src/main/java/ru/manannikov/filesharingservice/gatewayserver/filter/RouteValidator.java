@@ -12,9 +12,9 @@ public class RouteValidator {
 
     // Список не защищенных эндпоинтов
     public static final List<String> openApiEndpoints = List.of(
-        "/api/v1/auth/signup",
-        "/api/v1/auth/login",
-        "/api/v1/auth/refresh"
+        "/auth/signup",
+        "/auth/login",
+        "/auth/refresh"
     );
 
     public Predicate<ServerHttpRequest> isSecured = (request) -> {
