@@ -19,6 +19,7 @@
 		<relativePath/>
     </parent>
 
+    
     <modules>
         <module>configserver</module>
         <module>s3</module>
@@ -27,10 +28,12 @@
         <module>gateway</module>
     </modules>
 
+
     <properties>
         <spring-cloud-dependencies.version>2023.0.3</spring-cloud-dependencies.version>
         <docker.image.prefix>filesharingservice</docker.image.prefix>
     </properties>
+
 
     <build>
         <plugins>

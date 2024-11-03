@@ -1,6 +1,13 @@
 # docker-compose down && docker-compose up -d
 # mvn clean package
+# clear && docker compose down && docker compose up -d
+
+# clear && docker compose down configserver s3 eurekaserver && docker compose up -d configserver s3 eurekaserver
+
+# clear && docker compose up -d configserver
+
 name: filesharingservice
+
 
 volumes:
   db:
@@ -8,24 +15,34 @@ volumes:
   minio-data:
     driver: local
 
+
+x-common-variables: &common-variables
+  PROFILE: default
+  CONFIG_SERVER_URI: 'http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}'
+x-eureka-server-uri: &eureka-server-uri
+  EUREKA_SERVER_URI: 'http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/'
+
+
 services:
   # Всю конфигурацию для сервисов надо передавать через переменные среды окружения в файле .env определены открытые перменные, которые можно использовать для интерполяции во время выполнения команды docker-compose up, а в файле postgres-secrets.env -> определены секретные переменные среды, которые нельзя использовать для интерполяции. 
   database:
     image: 'postgres:latest'
-    restart: always
+    restart: 'unless-stopped'
     # Содержит определения секретных перменных среды POSTGRES_DB и POSTGRES_PASSWORD (обязательная переменная)
-    env_file:
-      - path: "postgres-secrets.env"
-        required: true
-    
-    container_name: "file-sharing-database"
+
+    container_name: database
     volumes:
-      - db:/var/lib/postgresql/data
+      - 'db:/var/lib/postgresql/data'
     
+    environment:
+      POSTGRES_DB: '${DATABASE_NAME}'
+      POSTGRES_USER: '${DATABASE_USERNAME}'
+      POSTGRES_PASSWORD: '${DATABASE_PASSWORD}'
+
     ports:
       # Порт для серверного приложения и для контейнера с базой данных.
       # Переменная объявлена в .env файле
-      - "${DATABASE_PORT}:5432"
+      - '${DATABASE_PORT}:5432'
     
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -34,20 +51,19 @@ services:
       retries: 5
 
     networks:
-      backend:
+      filesharingservice_network:
         aliases:
-          - "${DATABASE_HOST}"
+          - '${DATABASE_HOST}'
 
 
   minio:
     image: 'minio/minio:latest'
     restart: always
-    env_file:
-    # Содержит определения обязательных секретных перменных среды MINIO_ROOT_USER и MINIO_ROOT_PASSWORD -> логин и пароль администратора
-      - path: "minio-server-secrets.env"
-        required: true
+    environment:
+      MINIO_ROOT_USER: '${MINIO_ROOT_USER}'
+      MINIO_ROOT_PASSWORD: '${MINIO_ROOT_PASSWORD}'
     
-    container_name: "file-sharing-minio-server"
+    container_name: "minio"
     
     ports:
     # Minio Server
@@ -60,7 +76,7 @@ services:
     command: server /data --console-address ":9001"
     
     networks:
-      backend:
+      filesharingservice_network:
         aliases:
           - "${MINIO_SERVER_HOST}"
 
@@ -69,64 +85,77 @@ services:
     # Название собранного из Dockerfile, указанного в build, образа
     image: 'filesharingservice/keycloak'
     build:
-      context: ./keycloak
-    command: "start-dev"
-    restart: unless-stopped
+      context: './keycloak'
+
+    hostname: '${KEYCLOAK_HOSTNAME}'
+
+    restart: 'unless-stopped'
     
-    container_name: "file-sharing-keycloak"
+    container_name: keycloak
 
     depends_on:
       database:
         condition: service_healthy
-
-    env_file:
-      - path: "postgres-secrets.env"
-        required: true
+    
+    # command: ["start", "--http-port=${KEYCLOAK_HTTP_PORT}"]
+    command: ["start"]
 
     environment:
-      KEYCLOAK_ADMIN: "admin"
-      KEYCLOAK_ADMIN_PASSWORD: "admin"
-      KC_HTTP_ENABLED: "true"
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+      KC_HTTP_ENABLED: true
+      # KC_HOSTNAME: 'localhost'
+      KC_HOSTNAME: 'http://localhost:${KEYCLOAK_HTTP_PORT}'
       
-      KC_DB: "postgres"
-      KC_DB_URL: jdbc:postgresql://${DATABASE_HOST}:${DATABASE_PORT}/${POSTGRES_DB}?useSSL=false
+      KC_DB: postgres
+      KC_DB_USERNAME: '${DATABASE_USERNAME}'
+      KC_DB_PASSWORD: '${DATABASE_PASSWORD}'
+      KC_DB_URL: 'jdbc:postgresql://${DATABASE_HOST}:5432/${DATABASE_NAME}?useSSL=false'
 
     ports:
-      - "8080:8080"
+      - '${KEYCLOAK_HTTP_PORT}:8080'
+      - '${KEYCLOAK_HTTPS_PORT}:8443'
+      - '9002:9000'
 
     networks:
-      backend:
+      filesharingservice_network:
         aliases:
-          - "keycloak"
-  # Мои сервисы
-  # VVV
-  configserver:
-    image: 'filesharingservice/configserver:0.0.1-SNAPSHOT'
-    restart: unless-stopped
+          - '${KEYCLOAK_HOSTNAME}'
 
-    container_name: "file-sharing-config-sever"
+
+  configserver:
+    # image: 'filesharingservice/configserver:0.0.1-SNAPSHOT'
+    pull_policy: never
+    build:
+      context: '../file-sharing-config-server'
+
+    restart: 'unless-stopped'
+
+    container_name: 'config-sever'
     # Для файла application.yml нужна перменная среды CONFIG_SERVER_PORT
 
     environment:
-      CONFIG_SERVER_PORT: "${CONFIG_SERVER_PORT}"
+      CONFIG_SERVER_PORT: '${CONFIG_SERVER_PORT}'
+      CONFIG_REPOSITORY_URL: '${CONFIG_REPOSITORY_URL}'
 
     ports:
-      - "${CONFIG_SERVER_PORT}:${CONFIG_SERVER_PORT}"
+      - '${CONFIG_SERVER_PORT}:${CONFIG_SERVER_PORT}'
 
     networks:
-      backend:
+      filesharingservice_network:
         aliases:
-          - "${CONFIG_SERVER_HOST}"
+          - '${CONFIG_SERVER_HOST}'
 
 
   s3:
-    image: 'filesharingservice/s3:0.0.1-SNAPSHOT'
-    restart: unless-stopped
-    env_file:
-      - path: "minio-service-secrets.env"
-        required: true
+    # image: 'filesharingservice/s3:0.0.1-SNAPSHOT'
+    pull_policy: never
+    build:
+      context: '../file-sharing-s3-service'
+    
+    restart: 'unless-stopped'
 
-    container_name: "file-sharing-s3-service"
+    container_name: s3
 
     depends_on:
       minio:
@@ -137,135 +166,57 @@ services:
         condition: service_started
 
     environment:
-      PROFILE: "default"
-      CONFIG_SERVER_URI: "http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}"
+      << : [*common-variables, *eureka-server-uri]
     
-      EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
-    
-      S3_SERVICE_PORT: "${S3_SERVICE_PORT}"
-      SERVER_PATH: "${SERVER_PATH}"
+      S3_SERVICE_PORT: '${S3_SERVICE_PORT}'
+      SERVER_PATH: '${SERVER_PATH}'
 
-      MINIO_URI: "http://${MINIO_SERVER_HOST}:${MINIO_SERVER_PORT}"
+      MINIO_URI: 'http://${MINIO_SERVER_HOST}:${MINIO_SERVER_PORT}'
 
-      MINIO_REGION: "${MINIO_REGION}"
-      MINIO_BUCKET: "${MINIO_BUCKET}"
+      MINIO_ACCESS_KEY: '${MINIO_ACCESS_KEY}'
+      MINIO_SECRET_KEY: '${MINIO_SECRET_KEY}'
 
-      MAX_FILE_SIZE: "20MB"
-      MAX_REQUEST_SIZE: "20MB"
+      MINIO_REGION: '${MINIO_REGION}'
+      MINIO_BUCKET: '${MINIO_BUCKET}'
+      MAX_FILE_SIZE: 20MB
+      MAX_REQUEST_SIZE: 20MB
+      SWAGGER_UI_PATH: '${SWAGGER_UI_PATH}'
+      KEYCLOAK_URI: 'http://${KEYCLOAK_HOSTNAME}:8080/realms/${KEYCLOAK_REALM}'
 
-      SWAGGER_UI_PATH: "${SWAGGER_UI_PATH}"
 
     ports:
-      - "${S3_SERVICE_PORT}:${S3_SERVICE_PORT}"
+      - '${S3_SERVICE_PORT}:${S3_SERVICE_PORT}'
 
     networks:
-      - backend
+      - filesharingservice_network
 
-  # VVV
+
   eurekaserver:
-    image: 'filesharingservice/eurekaserver:0.0.1-SNAPSHOT'
-    restart: unless-stopped
+    # image: 'filesharingservice/eurekaserver:0.0.1-SNAPSHOT'
+    pull_policy: never
+    build:
+      context: '../file-sharing-eureka-server'
 
-    container_name: "file-sharing-eureka-server"
+    restart: 'unless-stopped'
+
+    container_name: 'eureka-server'
 
     depends_on:
       configserver:
         condition: service_started  
 
     environment:
-      PROFILE: "default"
-      CONFIG_SERVER_URI: "http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}"
-
-      EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
-      EUREKA_SERVER_PORT: "${EUREKA_SERVER_PORT}"
+      << : [*common-variables, *eureka-server-uri]
+      EUREKA_SERVER_PORT: '${EUREKA_SERVER_PORT}'
 
     ports:
-      - "${EUREKA_SERVER_PORT}:${EUREKA_SERVER_PORT}"
+      - '${EUREKA_SERVER_PORT}:${EUREKA_SERVER_PORT}'
 
     networks:
-      backend:
+      filesharingservice_network:
         aliases:
-          - "${EUREKA_SERVER_HOST}"
+          - '${EUREKA_SERVER_HOST}'
 
-
-  gatewayserver:
-    image: 'filesharingservice/gatewayserver:0.0.1-SNAPSHOT'
-    restart: unless-stopped
-
-    container_name: "file-sharing-gateway-server"
-
-    env_file:
-      - path: "security-service-secrets.env"
-        required: true
-
-    environment:
-      PROFILE: "default"
-      CONFIG_SERVER_URI: "http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}"
-
-      EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
-
-      GATEWAY_SERVER_PORT: "${GATEWAY_SERVER_PORT}"
-
-    depends_on:
-      configserver:
-        condition: service_started
-      eurekaserver:
-        condition: service_started
-
-    ports:
-      - "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}"
-
-    networks:
-      backend:
-        aliases:
-          - "${GATEWAY_SERVER_HOST}"
-
-
-  securityservice:
-    image: 'filesharingservice/securityservice:0.0.1-SNAPSHOT'
-    restart: unless-stopped
-
-    container_name: "file-sharing-security-service"
-
-    env_file:
-      - path: "postgres-secrets.env"
-        required: true
-      
-      - path: "security-service-secrets.env"
-        required: true
-
-    environment:
-      PROFILE: "default"
-      CONFIG_SERVER_URI: "http://${CONFIG_SERVER_HOST}:${CONFIG_SERVER_PORT}"
-
-      EUREKA_SERVER_URI: "http://${EUREKA_SERVER_HOST}:${EUREKA_SERVER_PORT}/eureka/"
-
-      POSTGRES_DB: "${POSTGRES_DB}"
-      DATABASE_HOST: "${DATABASE_HOST}"
-      DATABASE_PORT: "${DATABASE_PORT}"
-
-      SWAGGER_UI_PATH: "${SWAGGER_UI_PATH}"
-      SERVER_PATH: "${SERVER_PATH}"
-
-      SECURITY_SERVICE_PORT: "${SECURITY_SERVICE_PORT}"
-
-    depends_on:
-      database:
-        condition: service_healthy
-      configserver:
-        condition: service_started
-      eurekaserver:
-        condition: service_started
-
-    ports:
-      - "${SECURITY_SERVICE_PORT}:${SECURITY_SERVICE_PORT}"
-
-    networks:
-      backend:
-        aliases:
-          - "${SECURITY_SERVICE_HOST}"
 
 networks:
-  backend:
-  # bridge -> обеспечивает подключение контейнера к сети хоста
-    driver: bridge
+  filesharingservice_network:

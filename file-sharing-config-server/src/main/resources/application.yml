@@ -1,32 +1,28 @@
 spring:
   application:
-    name: file-sharing-config-server
+    name: 'file-sharing-config-server'
 # Указываем, где хранятся файлы конфигурации Spring Cloud Configuration Server
   profiles:
     # Профили перечисляются в порядке возрастания приоритета
     active: git
 
-  cloud:
-    config:
-      server:
-#        native:
-#          search-locations: classpath:/config
-        git:
-          uri: https://github.com/Antonio-Stradiavanti/spring-mvc-file-sharing-service-config.git
-          # configserver будет клонировать указанный репозиторий при запуске
-          cloneOnStart: true
-          defaultLabel: main
-          search-paths:
-            - '{application}/{profile}'
+  cloud.config.server:
+    git:
+      uri: '${CONFIG_REPOSITORY_URL}'
+      # configserver будет клонировать указанный репозиторий при запуске
+      cloneOnStart: true
+      defaultLabel: main
+      search-paths:
+        - '{application}/{profile}'
 
 # Порт, который Spring Configuration Server будет прослушивать, ожидая запросов на получение конфигурации
 server:
-  port: ${CONFIG_SERVER_PORT}
+  port: '${CONFIG_SERVER_PORT}'
 
 management:
   endpoints:
     web:
       exposure:
-        include: "*"
+        include: '*'
     health:
       show-details: always
