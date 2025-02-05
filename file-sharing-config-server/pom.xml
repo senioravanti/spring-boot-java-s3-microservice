@@ -12,7 +12,7 @@
 
 	<groupId>ru.manannikov.filesharingservice</groupId>
 	<artifactId>configserver</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>1.0.0</version>
 	<name>Configuration Server</name>
 	<description>Репозиторий конфигурации сервисов filesharingservice</description>
 	<url/>

@@ -25,12 +25,9 @@ import java.util.List;
 @Service
 public class MinioService {
     private final MinioClient s3Client;
-    private final String region;
 
-    public MinioService(@Value("${minio.region}") String region, MinioClient s3Client) {
-        this.region = region;
+    public MinioService(MinioClient s3Client) {
         this.s3Client = s3Client;
-//        log.info("region = {}", region);
     }
 
     public Iterable<Result<Item>> getObjects(String bucketName) {
@@ -127,7 +124,6 @@ public class MinioService {
             s3Client.makeBucket(
                     MakeBucketArgs.builder()
                             .bucket(bucketName)
-                            .region(region)
                             .objectLock(false)
                             .build()
             );

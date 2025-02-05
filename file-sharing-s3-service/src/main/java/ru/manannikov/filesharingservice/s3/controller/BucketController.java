@@ -3,16 +3,12 @@ package ru.manannikov.filesharingservice.s3.controller;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.DeleteMapping;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
-import org.springframework.web.bind.annotation.RestController;
-import ru.manannikov.filesharingservice.s3.dto.BucketResponseDto;
+import org.springframework.web.bind.annotation.*;
+import ru.manannikov.filesharingservice.s3.dto.BucketResponse;
 import ru.manannikov.filesharingservice.s3.service.BucketService;
 
 import java.util.List;
@@ -28,14 +24,18 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
     description = "Позволяет администратору создавать и удалять бакеты"
 )
 public class BucketController {
+    private static final Logger logger = LogManager.getLogger(BucketController.class);
+
     private final BucketService service;
 
     @GetMapping({"", "/"})
     @Operation(
         summary = "Вывести список бакетов"
     )
-    public List<BucketResponseDto> getAll() {
-        List<BucketResponseDto> buckets = service.listAll();
+    public List<BucketResponse> getAll() {
+        logger.info("Запрос на получение списка всех бакетов объектного хранилища");
+
+        List<BucketResponse> buckets = service.listAll();
 
         buckets.forEach(bucket -> {
             bucket.add(

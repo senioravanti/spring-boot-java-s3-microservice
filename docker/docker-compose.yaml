@@ -50,11 +50,6 @@ services:
       timeout: 5s
       retries: 5
 
-    networks:
-      filesharingservice_network:
-        aliases:
-          - '${DATABASE_HOST}'
-
 
   minio:
     image: 'minio/minio:latest'
@@ -75,11 +70,6 @@ services:
     # Выполнится сразу после запуска контейнера
     command: server /data --console-address ":9001"
     
-    networks:
-      filesharingservice_network:
-        aliases:
-          - "${MINIO_SERVER_HOST}"
-
 
   keycloak:
     # Название собранного из Dockerfile, указанного в build, образа
@@ -117,22 +107,15 @@ services:
       - '${KEYCLOAK_HTTPS_PORT}:8443'
       - '9002:9000'
 
-    networks:
-      filesharingservice_network:
-        aliases:
-          - '${KEYCLOAK_HOSTNAME}'
-
 
   configserver:
-    # image: 'filesharingservice/configserver:0.0.1-SNAPSHOT'
-    pull_policy: never
+
     build:
       context: '../file-sharing-config-server'
 
     restart: 'unless-stopped'
 
-    container_name: 'config-sever'
-    # Для файла application.yml нужна перменная среды CONFIG_SERVER_PORT
+    container_name: 'filesharingservice-config-sever'
 
     environment:
       CONFIG_SERVER_PORT: '${CONFIG_SERVER_PORT}'
@@ -141,13 +124,8 @@ services:
     ports:
       - '${CONFIG_SERVER_PORT}:${CONFIG_SERVER_PORT}'
 
-    networks:
-      filesharingservice_network:
-        aliases:
-          - '${CONFIG_SERVER_HOST}'
 
-
-  s3:
+  s3-service:
     # image: 'filesharingservice/s3:0.0.1-SNAPSHOT'
     pull_policy: never
     build:
@@ -158,12 +136,8 @@ services:
     container_name: s3
 
     depends_on:
-      minio:
-        condition: service_started
-      configserver:
-        condition: service_started
-      eurekaserver:
-        condition: service_started
+      - minio
+      - configserver
 
     environment:
       << : [*common-variables, *eureka-server-uri]
@@ -187,9 +161,6 @@ services:
     ports:
       - '${S3_SERVICE_PORT}:${S3_SERVICE_PORT}'
 
-    networks:
-      - filesharingservice_network
-
 
   eurekaserver:
     # image: 'filesharingservice/eurekaserver:0.0.1-SNAPSHOT'
@@ -211,12 +182,3 @@ services:
 
     ports:
       - '${EUREKA_SERVER_PORT}:${EUREKA_SERVER_PORT}'
-
-    networks:
-      filesharingservice_network:
-        aliases:
-          - '${EUREKA_SERVER_HOST}'
-
-
-networks:
-  filesharingservice_network:

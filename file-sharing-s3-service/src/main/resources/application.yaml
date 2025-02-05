@@ -1,10 +1,10 @@
 # Конфигурация приложения, которая используется до запуска cloud config
 spring:
   application:
-    name: 'file-sharing-s3-service'
+    name: 's3-service'
 
   profiles:
-    active: '${PROFILE}'
+    active: '${PROFILE:default}'
 
   config:
     import: 'configserver:${CONFIG_SERVER_URI}'

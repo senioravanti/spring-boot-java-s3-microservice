@@ -1,71 +1,67 @@
 package ru.manannikov.filesharingservice.s3.service;
 
-import io.minio.Result;
 import io.minio.messages.Bucket;
 import io.minio.messages.Item;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
-import ru.manannikov.filesharingservice.s3.dto.BucketResponseDto;
+import ru.manannikov.filesharingservice.s3.dto.BucketResponse;
 import ru.manannikov.filesharingservice.s3.exception.S3ObjectException;
 
-import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.StreamSupport;
 
 @Service
 @RequiredArgsConstructor
-@Slf4j
 public class BucketService {
     private final MinioService minioService;
 
-    public List<BucketResponseDto> listAll() {
-        List<Bucket> buckets = minioService.getBuckets();
-        List<Long> objectsCount = new ArrayList<>();
-        List<Long> bucketSizes = new ArrayList<>();
+    private static final Logger logger = LogManager.getLogger(BucketService.class);
 
-        int bucketCount = buckets.size();
+    private BucketResponse bucketToBucketResponseDto(Bucket bucket) {
+        final String bucketName = bucket.name();
+        final var bucketObjects = minioService.getObjects(bucketName);
 
-        try {
-            for (Bucket bucket : buckets) {
-                Iterable<Result<Item>> objects = minioService.getObjects(bucket.name());
+        long objectsCount = StreamSupport.stream(
+                bucketObjects.spliterator(),
+                false
+            )
+            .count()
+        ;
 
-                long counter = 0;
-                long bucketSize = 0;
-
-                for (Result<Item> object : objects) {
-                    Item item = object.get();
-
-                    if (item.isDir()) {
-                        Iterable<Result<Item>> userObjects = minioService.getObjectsByUsername(item.objectName(), bucket.name());
-                        for (Result<Item> userObject : userObjects) {
-                            Item userItem = userObject.get();
-                            bucketSize += userItem.size();
-                            ++counter;
-                        }
-                    }
-                    log.debug("itemName = {}", item.objectName());
-
+        long bucketSize = StreamSupport.stream(
+                bucketObjects.spliterator(),
+                false
+            )
+            .map(bucketObject -> {
+                try {
+                    Item bucketItem = bucketObject.get();
+                    return bucketItem.size();
+                } catch (Exception ex) {
+                    throw new S3ObjectException("Ошибка при формировании списка бакетов: " + ex.getLocalizedMessage());
                 }
+            })
+            .reduce(0L, Long::sum)
+            ;
 
-                objectsCount.add(counter);
-                bucketSizes.add(bucketSize);
-            }
-        } catch (Exception ex) {
-            throw new S3ObjectException("Ошибка при формировании списка бакетов : " + ex.getLocalizedMessage());
-        }
+        return BucketResponse.builder()
+            .name(bucketName)
 
-        List<BucketResponseDto> response = new ArrayList<>();
-        for (int i = 0; i < bucketCount; ++i) {
-            Bucket bucket = buckets.get(i);
-            response.add(new BucketResponseDto(
-                bucket.name(),
-                objectsCount.get(i),
-                bucketSizes.get(i),
-                bucket.creationDate()
-            ));
-        }
+            .objectsCount(objectsCount)
+            .bucketSize(bucketSize)
 
-        return response;
+            .creationDate(bucket.creationDate())
+        .build();
+    }
+
+    public List<BucketResponse> listAll() {
+        List<Bucket> buckets = minioService.getBuckets();
+
+        return buckets.stream()
+            .map(this::bucketToBucketResponseDto)
+            .toList()
+        ;
     }
 
     public String create(String bucketName) {
