@@ -4,7 +4,7 @@ LABEL maintainer="Manannikov Anton senioravanti@vk.com"
 
 COPY src /home/app/src/
 COPY pom.xml /home/app/
-RUN mvn -f /home/app/pom.xml clean package -Dmaven.test.skip=true
+RUN mvn -f /home/app/pom.xml clean package
 
 # Второй этап
 FROM eclipse-temurin:21-jre-noble
