@@ -1,4 +1,4 @@
-package ru.manannikov.filesharingservice.s3.service;
+package ru.manannikov.filesharingservice.s3.services.impl;
 
 import io.minio.messages.Bucket;
 import io.minio.messages.Item;
@@ -8,16 +8,20 @@ import org.apache.logging.log4j.Logger;
 import org.springframework.stereotype.Service;
 import ru.manannikov.filesharingservice.s3.dto.BucketResponse;
 import ru.manannikov.filesharingservice.s3.exception.S3ObjectException;
+import ru.manannikov.filesharingservice.s3.services.BucketService;
+import ru.manannikov.filesharingservice.s3.services.MinioService;
 
 import java.util.List;
 import java.util.stream.StreamSupport;
 
-@Service
+@Service("bucketService")
 @RequiredArgsConstructor
-public class BucketService {
-    private final MinioService minioService;
+public class BucketServiceImpl
+    implements BucketService
+{
+    private static final Logger logger = LogManager.getLogger(BucketServiceImpl.class);
 
-    private static final Logger logger = LogManager.getLogger(BucketService.class);
+    private final MinioService minioService;
 
     private BucketResponse bucketToBucketResponseDto(Bucket bucket) {
         final String bucketName = bucket.name();
@@ -55,7 +59,8 @@ public class BucketService {
         .build();
     }
 
-    public List<BucketResponse> listAll() {
+    @Override
+    public List<BucketResponse> findAll() {
         List<Bucket> buckets = minioService.getBuckets();
 
         return buckets.stream()
@@ -64,18 +69,20 @@ public class BucketService {
         ;
     }
 
+    @Override
     public String create(String bucketName) {
         if (bucketName.isBlank()) {
-            throw new S3ObjectException("Ошибка при создании бакета : у бакета должно быть название");
+            throw new S3ObjectException("Ошибка при создании бакета: у бакета должно быть название");
         }
         minioService.makeBucket(bucketName);
 
         return "Бакет \"" + bucketName + "\" успешно создан";
     }
 
+    @Override
     public String delete(String bucketName) {
         if (bucketName.isBlank()) {
-            throw new S3ObjectException("Ошибка при удалении бакета : у бакета должно быть название");
+            throw new S3ObjectException("Ошибка при удалении бакета: у бакета должно быть название");
         }
         minioService.removeBucket(bucketName);
 

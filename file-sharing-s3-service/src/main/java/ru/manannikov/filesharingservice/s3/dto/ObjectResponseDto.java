@@ -16,13 +16,8 @@ import java.time.ZonedDateTime;
 @Builder
 @Schema(description = "Ответ на успешную загрузку/обновление объекта. Метаданные объекта")
 public class ObjectResponseDto extends RepresentationModel<ObjectResponseDto> {
-    @Schema(description = "Имя пользователя, загрузившего объект")
-    private String username;
-    @Schema(description = "Уникальный идентификатор объекта в формате \"UUID.*\"")
+    @Schema(description = "Идентификатор объекта")
     private String objectName;
-
-    @Schema(description = "Идентификатор бакета")
-    private String bucketName;
 
     @Schema(description = "Размер объекта в байтах")
     private Long size;

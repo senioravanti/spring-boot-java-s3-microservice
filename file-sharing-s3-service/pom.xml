@@ -12,9 +12,9 @@
 
 	<groupId>ru.manannikov.filesharingservice</groupId>
 	<artifactId>s3</artifactId>
-	<version>0.0.1-SNAPSHOT</version>
+	<version>0.0.1</version>
 	<name>s3</name>
-	<description>s3 совместимое объектное хранилище для загруженных пользователями filesharingservice файлов</description>
+	<description>Сервис для работы с s3 совместимым объектным хранилищем minio</description>
 
 	<url/>
 	<licenses>

@@ -12,8 +12,7 @@ import org.springframework.validation.annotation.Validated;
 @Getter @Setter
 @Validated
 public class MinioProperties {
-    @NotNull
-    private String bucket;
+
     @NotNull
     private String url;
     @NotNull
