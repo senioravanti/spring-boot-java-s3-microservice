@@ -1,6 +1,6 @@
 spring:
   application:
-    name: 'file-sharing-config-server'
+    name: 'config-server'
 # Указываем, где хранятся файлы конфигурации Spring Cloud Configuration Server
   profiles:
     # Профили перечисляются в порядке возрастания приоритета
@@ -9,12 +9,12 @@ spring:
   # Лучше сделать один репозиторий с конфигурацией под каждый из микросервисов, а каталоги -- под каждый из профилей.
   cloud.config.server:
     git:
-      uri: '${CONFIG_REPOSITORY_URL}'
+      uri: '${CONFIG_REPOSITORY_URL}/{application}-config'
       # configserver будет клонировать указанный репозиторий при запуске
       cloneOnStart: true
       defaultLabel: main
       search-paths:
-        - '{application}/{profile}'
+        - '{profile}'
 
 # Порт, который Spring Configuration Server будет прослушивать, ожидая запросов на получение конфигурации
 server:
