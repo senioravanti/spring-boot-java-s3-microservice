@@ -7,14 +7,14 @@ spring:
     active: git
 
   # Лучше сделать один репозиторий с конфигурацией под каждый из микросервисов, а каталоги -- под каждый из профилей.
-  cloud.config.server:
-    git:
-      uri: '${CONFIG_REPOSITORY_URL}/{application}-config'
+  cloud:
+    config:
+      server:
+        git:
+          uri: '${CONFIG_REPOSITORY_URL}/{application}-config.git'
       # configserver будет клонировать указанный репозиторий при запуске
       cloneOnStart: true
       defaultLabel: main
-      search-paths:
-        - '{profile}'
 
 # Порт, который Spring Configuration Server будет прослушивать, ожидая запросов на получение конфигурации
 server:
