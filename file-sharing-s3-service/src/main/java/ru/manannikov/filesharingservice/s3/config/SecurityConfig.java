@@ -1,5 +1,7 @@
 package ru.manannikov.filesharingservice.s3.config;
 
+import org.apache.logging.log4j.Logger;
+import org.apache.logging.log4j.LogManager;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -9,14 +11,37 @@ import org.springframework.security.config.annotation.web.configuration.EnableWe
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.Arrays;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
 @EnableMethodSecurity
 public class SecurityConfig {
+    private static final Logger logger = LogManager.getLogger(SecurityConfig.class);
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri}")
     private String jwkSetUri;
+
+    @Value("${app.allowed-origins}")
+    private String[] allowedOrigins;
+
+    @Bean
+    public UrlBasedCorsConfigurationSource corsConfigurationSource() {
+        final var allowedOriginsList = Arrays.asList(allowedOrigins);
+        logger.debug("allowed origins: {}", allowedOriginsList);
+
+        final var corsConfiguration = new CorsConfiguration();
+        corsConfiguration.setAllowedOrigins(allowedOriginsList);
+        corsConfiguration.setAllowedMethods(List.of("*"));
+
+        final var source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", corsConfiguration);
+        return source;
+    }
 
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http)
@@ -24,6 +49,10 @@ public class SecurityConfig {
     {
         http.csrf(
             AbstractHttpConfigurer::disable
+        );
+
+        http.cors(cors -> cors
+            .configurationSource(corsConfigurationSource())
         );
 
         http.sessionManagement(
